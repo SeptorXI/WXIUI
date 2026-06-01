@@ -123,51 +123,22 @@ windower.register_event(
     end
 )
 
--- =========================================================
--- HUD REGISTRY
---
--- Single source of truth for everything driven per-HUD: settings,
--- visibility, command dispatch, drag preview, save/restore.
--- Adding a HUD = adding one row here.
---
--- Fields:
---   name             - command-string name (also key in settings.lua)
---   module           - the required module table
---   has_preview      - module supports a `preview` boolean flag
---   has_stop_preview - module exposes `stop_preview()` (zonehud)
---   visibility       - 'settings' (toggleable + saved) or 'always'
--- =========================================================
-
-local huds = {
-    { name = 'playerhud',     module = playerhud,     has_preview = true,  visibility = 'settings' },
-    { name = 'targethud',     module = targethud,     has_preview = true,  visibility = 'settings' },
-    { name = 'tothud',        module = tothud,        has_preview = true,  visibility = 'always'   },
-    { name = 'castbar',       module = castbar,       has_preview = true,  visibility = 'settings' },
-    { name = 'buffhud',       module = buffhud,       has_preview = true,  visibility = 'settings' },
-    { name = 'debuffhud',     module = debuffhud,     has_preview = true,  visibility = 'settings' },
-    { name = 'partyhud',      module = partyhud,      has_preview = true,  visibility = 'settings' },
-    { name = 'experiencehud', module = experiencehud, has_preview = true,  visibility = 'settings' },
-    { name = 'distancehud',   module = distancehud,   has_preview = true,  visibility = 'settings' },
-    { name = 'mobinfohud',    module = mobinfohud,    has_preview = true,  visibility = 'settings' },
-    { name = 'gilhud',        module = gilhud,        has_preview = true,  visibility = 'always'   },
-    { name = 'zonehud',       module = zonehud,       has_preview = true,  has_stop_preview = true, visibility = 'always' },
-    { name = 'inventoryhud',  module = inventoryhud,  has_preview = true,  visibility = 'always'   },
-    { name = 'pethud',        module = pethud,        has_preview = true,  visibility = 'always'   },
-    { name = 'lootnotify',    module = lootnotify,    has_preview = true,  visibility = 'always'   },
-}
-
--- Lookup table by name for the command dispatcher.
-local hud_by_name = {}
-for _, h in ipairs(huds) do hud_by_name[h.name] = h end
-
 -- LOAD VISIBILITY
-for _, h in ipairs(huds) do
-    if h.visibility == 'settings' then
-        h.module.visible = settings[h.name].visible
-    else
-        h.module.visible = true
-    end
-end
+playerhud.visible = settings.playerhud.visible
+targethud.visible = settings.targethud.visible
+buffhud.visible = settings.buffhud.visible
+debuffhud.visible = settings.debuffhud.visible
+partyhud.visible = settings.partyhud.visible
+castbar.visible = settings.castbar.visible
+experiencehud.visible = settings.experiencehud.visible
+distancehud.visible = settings.distancehud.visible
+mobinfohud.visible = settings.mobinfohud.visible
+
+tothud.visible = true
+gilhud.visible = true
+zonehud.visible = true
+inventoryhud.visible = true
+pethud.visible = true
 
 
 -- GRID
@@ -278,21 +249,125 @@ local function save_settings()
 
     file:write('return {\n')
 
-    for i, h in ipairs(huds) do
+    file:write(string.format(
+    '    playerhud = {\n        x = %d,\n        y = %d,\n        visible = %s,\n        scale = %d\n    },\n\n',
+    playerhud.x,
+    playerhud.y,
+    tostring(playerhud.visible),
+    settings.playerhud.scale
+))
 
-        local sep = (i < #huds) and ',\n\n' or '\n'
+    file:write(string.format(
+        '    targethud = {\n        x = %d,\n        y = %d,\n        visible = %s,\n        scale = %d\n    },\n\n',
+        targethud.x,
+        targethud.y,
+        tostring(targethud.visible),
+        settings.targethud.scale
+    ))
 
-        file:write(string.format(
-            '    %s = {\n        x = %d,\n        y = %d,\n        visible = %s,\n        scale = %d\n    }%s',
-            h.name,
-            h.module.x,
-            h.module.y,
-            tostring(h.module.visible),
-            settings[h.name].scale,
-            sep
-        ))
+    file:write(string.format(
+        '    buffhud = {\n        x = %d,\n        y = %d,\n        visible = %s,\n        scale = %d\n    },\n\n',
+        buffhud.x,
+        buffhud.y,
+        tostring(buffhud.visible),
+        settings.buffhud.scale
+    ))
 
-    end
+    file:write(string.format(
+        '    debuffhud = {\n        x = %d,\n        y = %d,\n        visible = %s,\n        scale = %d\n    },\n\n',
+        debuffhud.x,
+        debuffhud.y,
+        tostring(debuffhud.visible),
+        settings.debuffhud.scale
+    ))
+
+    file:write(string.format(
+        '    partyhud = {\n        x = %d,\n        y = %d,\n        visible = %s,\n        scale = %d\n    },\n\n',
+        partyhud.x,
+        partyhud.y,
+        tostring(partyhud.visible),
+        settings.partyhud.scale
+    ))
+
+    file:write(string.format(
+        '    castbar = {\n        x = %d,\n        y = %d,\n        visible = %s,\n        scale = %d\n    },\n\n',
+        castbar.x,
+        castbar.y,
+        tostring(castbar.visible),
+        settings.castbar.scale
+    ))
+
+    file:write(string.format(
+        '    experiencehud = {\n        x = %d,\n        y = %d,\n        visible = %s,\n        scale = %d\n    },\n\n',
+        experiencehud.x,
+        experiencehud.y,
+        tostring(experiencehud.visible),
+        settings.experiencehud.scale
+    ))
+
+    file:write(string.format(
+        '    distancehud = {\n        x = %d,\n        y = %d,\n        visible = %s,\n        scale = %d\n    },\n\n',
+        distancehud.x,
+        distancehud.y,
+        tostring(distancehud.visible),
+        settings.distancehud.scale
+    ))
+
+    file:write(string.format(
+        '    mobinfohud = {\n        x = %d,\n        y = %d,\n        visible = %s,\n        scale = %d\n    },\n\n',
+        mobinfohud.x,
+        mobinfohud.y,
+        tostring(mobinfohud.visible),
+        settings.mobinfohud.scale
+    ))
+
+    file:write(string.format(
+        '    gilhud = {\n        x = %d,\n        y = %d,\n        visible = %s,\n        scale = %d\n    },\n\n',
+        gilhud.x,
+        gilhud.y,
+        tostring(gilhud.visible),
+        settings.gilhud.scale
+    ))
+
+    file:write(string.format(
+        '    zonehud = {\n        x = %d,\n        y = %d,\n        visible = %s,\n        scale = %d\n    },\n\n',
+        zonehud.x,
+        zonehud.y,
+        tostring(zonehud.visible),
+        settings.zonehud.scale
+    ))
+
+    file:write(string.format(
+        '    inventoryhud = {\n        x = %d,\n        y = %d,\n        visible = %s,\n        scale = %d\n    },\n\n',
+        inventoryhud.x,
+        inventoryhud.y,
+        tostring(inventoryhud.visible),
+        settings.inventoryhud.scale
+    ))
+
+    file:write(string.format(
+        '    pethud = {\n        x = %d,\n        y = %d,\n        visible = %s,\n        scale = %d\n    },\n\n',
+        pethud.x,
+        pethud.y,
+        tostring(pethud.visible),
+        settings.pethud.scale
+    ))
+
+    file:write(string.format(
+        '    lootnotify = {\n        x = %d,\n        y = %d,\n        visible = %s,\n        scale = %d\n    },\n\n',
+        lootnotify.x,
+        lootnotify.y,
+        tostring(lootnotify.visible),
+        settings.lootnotify.scale
+    ))   
+   
+    file:write(string.format(
+        '    tothud = {\n        x = %d,\n        y = %d,\n        visible = %s,\n        scale = %d\n    }\n',
+        tothud.x,
+        tothud.y,
+        tostring(tothud.visible),
+        settings.tothud.scale
+    ))
 
     file:write('}')
 
@@ -330,27 +405,51 @@ windower.register_event(
 
         end
 
-        if cmd == 'help' or cmd == nil then
+        if module == 'playerhud' then
+            hud = playerhud
 
-            windower.add_to_chat(207, '[WXIUI] Commands:')
-            windower.add_to_chat(207, '  //wxiui config              - Open config menu')
-            windower.add_to_chat(207, '  //wxiui show <hud>          - Show a HUD')
-            windower.add_to_chat(207, '  //wxiui hide <hud>          - Hide a HUD')
-            windower.add_to_chat(207, '  //wxiui toggle <hud>        - Toggle a HUD')
-            windower.add_to_chat(207, '  //wxiui move <hud>          - Drag-position a HUD')
+        elseif module == 'targethud' then
+            hud = targethud
 
-            local names = {}
-            for _, h in ipairs(huds) do names[#names + 1] = h.name end
-            windower.add_to_chat(207, '  Known HUDs: ' .. table.concat(names, ', '))
+        elseif module == 'tothud' then
+            hud = tothud
 
-            return
+        elseif module == 'buffhud' then
+            hud = buffhud
 
-        end
+        elseif module == 'debuffhud' then
+            hud = debuffhud
 
-        local registry_entry = module and hud_by_name[module]
+        elseif module == 'partyhud' then
+            hud = partyhud
 
-        if registry_entry then
-            hud = registry_entry.module
+        elseif module == 'castbar' then
+            hud = castbar
+
+        elseif module == 'experiencehud' then
+            hud = experiencehud
+
+        elseif module == 'distancehud' then
+            hud = distancehud
+
+        elseif module == 'mobinfohud' then
+            hud = mobinfohud
+
+        elseif module == 'gilhud' then
+            hud = gilhud
+
+        elseif module == 'zonehud' then
+            hud = zonehud
+
+        elseif module == 'inventoryhud' then
+            hud = inventoryhud
+
+        elseif module == 'pethud' then
+            hud = pethud
+
+        elseif module == 'lootnotify' then
+            hud = lootnotify
+
         end
 
         if module and not hud then
@@ -414,19 +513,75 @@ end
         -- MOVE
         if cmd == 'move' and hud then
 
-            moving_module = hud
+            moving_module =
+                hud
 
-            move_start_time = os.clock()
+            move_start_time =
+                os.clock()
 
             create_grid()
 
-            if registry_entry and registry_entry.has_preview then
-                hud.preview = true
+
+            if hud == targethud then
+                targethud.preview = true
+            end
+
+            if hud == tothud then
+                tothud.preview = true
+            end
+
+            if hud == buffhud then
+                buffhud.preview = true
+            end
+
+            if hud == debuffhud then
+                debuffhud.preview = true
+            end
+
+            if hud == partyhud then
+                partyhud.preview = true
+            end
+
+            if hud == castbar then
+                castbar.preview = true
+            end
+
+            if hud == experiencehud then
+                experiencehud.preview = true
+            end
+
+            if hud == distancehud then
+                distancehud.preview = true
+            end
+
+            if hud == mobinfohud then
+                mobinfohud.preview = true
+            end
+
+            if hud == gilhud then
+                gilhud.preview = true
+            end
+
+            if hud == zonehud then
+                zonehud.preview = true
+            end
+
+            if hud == inventoryhud then
+                inventoryhud.preview = true
+            end
+
+            if hud == pethud then
+                pethud.preview = true
+            end
+
+            if hud == lootnotify then
+                lootnotify.preview = true
             end
 
             windower.add_to_chat(
                 207,
-                '[WXIUI] Moving: ' .. module
+                '[WXIUI] Moving: ' ..
+                module
             )
 
             return
@@ -444,23 +599,113 @@ windower.register_event(
     'load',
     function()
 
-        -- Initialize every HUD that has a lifecycle method (lootnotify
-        -- doesn't — it allocates per-notification).
-        for _, h in ipairs(huds) do
-            if h.module.initialize then
-                h.module.initialize()
-            end
-        end
-
+        playerhud.initialize()
+        targethud.initialize()
+        tothud.initialize()
+        castbar.initialize()
+        buffhud.initialize()
+        debuffhud.initialize()
+        partyhud.initialize()
+        experiencehud.initialize()
+        distancehud.initialize()
+        mobinfohud.initialize()
+        gilhud.initialize()
+        zonehud.initialize()
+        inventoryhud.initialize()
+        pethud.initialize()
         partyinvite.initialize()
         tradeinvite.initialize()
         configmenu.initialize()
 
-        -- Restore saved positions.
-        for _, h in ipairs(huds) do
-            h.module.x = settings[h.name].x
-            h.module.y = settings[h.name].y
-        end
+        playerhud.x =
+            settings.playerhud.x
+
+        playerhud.y =
+            settings.playerhud.y
+
+        targethud.x =
+            settings.targethud.x
+
+        targethud.y =
+            settings.targethud.y
+
+        buffhud.x =
+            settings.buffhud.x
+
+        buffhud.y =
+            settings.buffhud.y
+
+        debuffhud.x =
+            settings.debuffhud.x
+
+        debuffhud.y =
+            settings.debuffhud.y
+
+        partyhud.x =
+            settings.partyhud.x
+
+        partyhud.y =
+            settings.partyhud.y
+
+        castbar.x =
+            settings.castbar.x
+
+        castbar.y =
+            settings.castbar.y
+
+        experiencehud.x =
+            settings.experiencehud.x
+
+        experiencehud.y =
+            settings.experiencehud.y
+
+        distancehud.x =
+            settings.distancehud.x
+
+        distancehud.y =
+            settings.distancehud.y
+
+        mobinfohud.x =
+            settings.mobinfohud.x
+
+        mobinfohud.y =
+            settings.mobinfohud.y
+
+        gilhud.x =
+            settings.gilhud.x
+
+        gilhud.y =
+            settings.gilhud.y
+
+        zonehud.x =
+            settings.zonehud.x
+
+        zonehud.y =
+            settings.zonehud.y
+
+        inventoryhud.x =
+            settings.inventoryhud.x
+
+        inventoryhud.y =
+            settings.inventoryhud.y
+
+        pethud.x =
+            settings.pethud.x
+
+        pethud.y =
+            settings.pethud.y
+
+        lootnotify.x =
+           settings.lootnotify.x
+
+        lootnotify.y =
+           settings.lootnotify.y
+    
+        tothud.x =
+            settings.tothud.x
+
+        tothud.y =
+            settings.tothud.y
 
     end
 )
@@ -476,6 +721,10 @@ windower.register_event(
         local player =
             windower.ffxi.get_player()
 
+        gilhud.visible =
+            not hidden_by_event and
+            settings.gilhud.visible
+
         -- =================================================
         -- HIDE HUD OUTSIDE GAME
         -- =================================================
@@ -486,9 +735,20 @@ windower.register_event(
 
             hidden_by_event = true
 
-            for _, h in ipairs(huds) do
-                h.module.visible = false
-            end
+            playerhud.visible = false
+            targethud.visible = false
+            tothud.visible = false
+            castbar.visible = false
+            buffhud.visible = false
+            debuffhud.visible = false
+            partyhud.visible = false
+            experiencehud.visible = false
+            distancehud.visible = false
+            mobinfohud.visible = false
+            gilhud.visible = false
+            zonehud.visible = false
+            inventoryhud.visible = false
+            pethud.visible = false
 
             return
 
@@ -498,34 +758,100 @@ windower.register_event(
         -- MENU / EVENT HIDE
         -- =================================================
 
-        for _, h in ipairs(huds) do
-            h.module.visible =
-                not hidden_by_event and
-                settings[h.name].visible
-        end
+
+        playerhud.visible =
+            not hidden_by_event and
+            settings.playerhud.visible
+
+        targethud.visible =
+            not hidden_by_event and
+            settings.targethud.visible
+
+        partyhud.visible =
+            not hidden_by_event and
+            settings.partyhud.visible
+
+        castbar.visible =
+            not hidden_by_event and
+            settings.castbar.visible
+
+        buffhud.visible =
+            not hidden_by_event and
+            settings.buffhud.visible
+
+        debuffhud.visible =
+            not hidden_by_event and
+            settings.debuffhud.visible
+
+        experiencehud.visible =
+            not hidden_by_event and
+            settings.experiencehud.visible
+
+        distancehud.visible =
+            not hidden_by_event and
+            settings.distancehud.visible
+
+        mobinfohud.visible =
+            not hidden_by_event and
+            settings.mobinfohud.visible
+
+        tothud.visible =
+    not hidden_by_event and
+    settings.tothud.visible
+
+zonehud.visible =
+    not hidden_by_event and
+    settings.zonehud.visible
+
+inventoryhud.visible =
+    not hidden_by_event and
+    settings.inventoryhud.visible
+
+pethud.visible =
+    not hidden_by_event and
+    settings.pethud.visible
 
         -- =================================================
         -- SYSTEMS
         -- =================================================
 
-        if bufftracker and bufftracker.update then
+        if bufftracker and
+           bufftracker.update
+        then
+
             bufftracker.update()
+
         end
 
-        if targetdebuffs and targetdebuffs.update then
+        if targetdebuffs and
+           targetdebuffs.update
+        then
+
             targetdebuffs.update()
+
         end
 
         -- =================================================
         -- HUDS
         -- =================================================
 
-        for _, h in ipairs(huds) do
-            h.module.update()
-        end
-
+        playerhud.update()
+        targethud.update()
+        tothud.update()
+        castbar.update()
+        buffhud.update()
+        debuffhud.update()
+        partyhud.update()
+        experiencehud.update()
+        distancehud.update()
+        mobinfohud.update()
+        gilhud.update()
+        zonehud.update()
+        inventoryhud.update()
+        pethud.update()
         partyinvite.update()
         tradeinvite.update()
+        lootnotify.update()
         configmenu.update()
 
     end
@@ -582,27 +908,136 @@ if type == 2 and
 then
             destroy_grid()
 
-            -- Find the registry row for the module being moved, then
-            -- exit preview using whatever mechanism it supports.
-            for _, h in ipairs(huds) do
-                if moving_module == h.module then
-                    if h.has_preview then
-                        h.module.preview = false
-                    end
-                    if h.has_stop_preview then
-                        h.module.stop_preview()
-                    end
-                    break
-                end
-            end
+            if moving_module ==
+               castbar
+            then
 
-            -- Castbar still needs its explicit hide() to tear down
-            -- the bar prim when preview ends.
-            if moving_module == castbar then
+                castbar.preview =
+                    false
+
                 castbar.hide()
+
             end
 
-            moving_module = nil
+            if moving_module ==
+               targethud
+            then
+
+                targethud.preview =
+                    false
+
+            end
+
+            if moving_module ==
+               tothud
+            then
+
+                tothud.preview =
+                    false
+
+            end
+
+            if moving_module ==
+               partyhud
+            then
+
+                partyhud.preview =
+                    false
+
+            end
+
+            if moving_module ==
+               buffhud
+            then
+
+                buffhud.preview =
+                    false
+
+            end
+
+            if moving_module ==
+               debuffhud
+            then
+
+                debuffhud.preview =
+                    false
+
+            end
+
+            if moving_module ==
+               experiencehud
+            then
+
+                experiencehud.preview =
+                    false
+
+            end
+
+            if moving_module ==
+               distancehud
+            then
+
+                distancehud.preview =
+                    false
+
+            end
+
+            if moving_module ==
+               mobinfohud
+            then
+
+                mobinfohud.preview =
+                    false
+
+            end
+
+            if moving_module ==
+               gilhud
+            then
+
+                gilhud.preview =
+                    false
+
+            end
+
+            if moving_module ==
+               inventoryhud
+            then
+
+                inventoryhud.preview =
+                    false
+
+            end
+
+            if moving_module ==
+               pethud
+            then
+
+               pethud.preview =
+                    false
+
+            end
+            
+            if moving_module ==
+               lootnotify
+            then
+
+               lootnotify.preview =
+                    false
+
+             end
+
+
+            if moving_module ==
+               zonehud
+            then
+
+                zonehud.stop_preview()
+
+            end
+
+            moving_module =
+                nil
 
             save_settings()
 
@@ -659,14 +1094,23 @@ windower.register_event(
 
         destroy_grid()
 
-        for _, h in ipairs(huds) do
-            if h.module.destroy then
-                h.module.destroy()
-            end
-        end
-
+        playerhud.destroy()
+        targethud.destroy()
+        tothud.destroy()
+        castbar.destroy()
+        buffhud.destroy()
+        debuffhud.destroy()
+        partyhud.destroy()
+        experiencehud.destroy()
+        distancehud.destroy()
+        mobinfohud.destroy()
+        gilhud.destroy()
+        zonehud.destroy()
+        inventoryhud.destroy()
+        pethud.destroy()
         partyinvite.destroy()
         tradeinvite.destroy()
+        lootnotify.destroy()
         configmenu.destroy()
 
     end
