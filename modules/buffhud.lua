@@ -30,23 +30,57 @@ end
 buffhud.mouse_x = 0
 buffhud.mouse_y = 0
 
+local MAX_BUFFS = 32
 local ICON_SIZE = 20
 local ICON_SPACING = 24
 
--- TOOLTIP
-local tooltip = texts.new('')
+-- ICON PATH RESOLUTION
+local ICON_PATH =
+    windower.addon_path ..
+    'assets/icons/'
 
-tooltip:size(10)
-tooltip:font('Arial')
-tooltip:color(255, 255, 255)
-tooltip:stroke_color(0, 0, 0)
-tooltip:stroke_width(2)
-tooltip:bg_alpha(180)
-tooltip:hide()
+local FALLBACK_ICON =
+    ICON_PATH ..
+    'fallback.png'
+
+local icon_path_cache = {}
+
+local function get_icon_path(buff_id)
+
+    local cached = icon_path_cache[buff_id]
+
+    if cached then
+        return cached
+    end
+
+    local path = ICON_PATH .. tostring(buff_id) .. '.png'
+
+    if not windower.file_exists(path) then
+        path = FALLBACK_ICON
+    end
+
+    icon_path_cache[buff_id] = path
+
+    return path
+
+end
+
+-- TOOLTIP (created in initialize)
+local tooltip = nil
 
 function buffhud.initialize()
 
-    for i = 1, 16 do
+    tooltip = texts.new('')
+
+    tooltip:size(10)
+    tooltip:font('Arial')
+    tooltip:color(255, 255, 255)
+    tooltip:stroke_color(0, 0, 0)
+    tooltip:stroke_width(2)
+    tooltip:bg_alpha(180)
+    tooltip:hide()
+
+    for i = 1, MAX_BUFFS do
 
         local icon = images.new()
 
@@ -64,7 +98,7 @@ function buffhud.update()
 
         tooltip:hide()
 
-        for i = 1, 16 do
+        for i = 1, MAX_BUFFS do
 
             buff_icons[i]:hide()
 
@@ -91,7 +125,7 @@ local icon_spacing =
 
         tooltip:hide()
 
-        for i = 1, 16 do
+        for i = 1, MAX_BUFFS do
 
             local icon = buff_icons[i]
 
@@ -129,13 +163,13 @@ local icon_spacing =
 
     local hovering = false
 
-    for i = 1, 16 do
+    for i = 1, MAX_BUFFS do
 
         local icon = buff_icons[i]
 
         local buff_id = buffs[i]
 
-        if buff_id then
+        if buff_id and buff_id > 0 then
 
             local x =
                 buffhud.x +
@@ -143,11 +177,7 @@ local icon_spacing =
 
             local y = buffhud.y
 
-            local icon_path =
-                windower.addon_path ..
-                'assets/icons/' ..
-                tostring(buff_id) ..
-                '.png'
+            local icon_path = get_icon_path(buff_id)
 
             icon:path(icon_path)
 
@@ -265,13 +295,20 @@ end
 
 function buffhud.destroy()
 
-    tooltip:destroy()
+    if tooltip then
+        tooltip:destroy()
+        tooltip = nil
+    end
 
-    for i = 1, 16 do
+    for i = 1, MAX_BUFFS do
 
-        buff_icons[i]:destroy()
+        if buff_icons[i] then
+            buff_icons[i]:destroy()
+        end
 
     end
+
+    buff_icons = {}
 
 end
 

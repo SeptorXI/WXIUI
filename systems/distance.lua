@@ -1,5 +1,20 @@
 local distance = {}
 
+local res = require('resources')
+
+-- Magic-capable jobs lookup. Hoisted to file scope so we don't rebuild
+-- the literal table on every prerender frame.
+local MAGIC_JOBS = {
+    WHM = true,
+    BLM = true,
+    RDM = true,
+    SCH = true,
+    GEO = true,
+    BRD = true,
+    SMN = true,
+    BLU = true,
+}
+
 -- =========================================================
 -- STATE
 -- =========================================================
@@ -16,6 +31,12 @@ distance.color = {
 
 distance.mode =
     'default'
+
+-- Mode detection is expensive (calls windower.ffxi.get_items, which
+-- returns the full inventory). Recompute at most every 0.5s.
+local MODE_RECALC_INTERVAL = 0.5
+local last_mode_clock = -math.huge
+local last_mode_value = 'default'
 
 -- =========================================================
 -- HELPERS
@@ -45,33 +66,12 @@ local function can_cast_magic(
         return false
     end
 
-    local magic_jobs = {
-
-        WHM = true,
-        BLM = true,
-        RDM = true,
-        SCH = true,
-        GEO = true,
-        BRD = true,
-        SMN = true,
-        BLU = true,
-
-    }
-
-    if magic_jobs[
-        player.main_job
-    ] then
-
+    if MAGIC_JOBS[player.main_job] then
         return true
-
     end
 
-    if magic_jobs[
-        player.sub_job
-    ] then
-
+    if MAGIC_JOBS[player.sub_job] then
         return true
-
     end
 
     return false
@@ -134,9 +134,6 @@ local function detect_mode()
                 bag[range_slot]
 
             if item then
-
-                local res =
-                    require('resources')
 
                 local item_data =
                     res.items[item.id]
@@ -225,8 +222,13 @@ function distance.update()
     distance.target_distance =
         dist
 
-    distance.mode =
-        detect_mode()
+    -- Throttle the expensive mode-detection (it calls get_items()).
+    local now = os.clock()
+    if now - last_mode_clock >= MODE_RECALC_INTERVAL then
+        last_mode_value = detect_mode()
+        last_mode_clock = now
+    end
+    distance.mode = last_mode_value
 
     local combined_size =
         player.model_size +

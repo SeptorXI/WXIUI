@@ -11,6 +11,29 @@ local actiontracker = {}
 
 local pending_actions = {}
 
+-- GC stale entries: anything older than PENDING_TTL gets cleared.
+-- Without this, mobs you never re-target after casting on them leak
+-- their pending entry until the addon reloads.
+local PENDING_TTL = 10
+local PENDING_GC_INTERVAL = 30
+local last_gc_clock = 0
+
+local function gc_pending(now)
+
+    if now - last_gc_clock < PENDING_GC_INTERVAL then
+        return
+    end
+
+    last_gc_clock = now
+
+    for target_id, pending in pairs(pending_actions) do
+        if now - pending.created_at > PENDING_TTL then
+            pending_actions[target_id] = nil
+        end
+    end
+
+end
+
 -- TRACK ACTION
 local function track_action(action)
 
@@ -116,6 +139,10 @@ windower.register_event(
 -- GET PENDING ACTION
 function actiontracker.get_pending(target_id)
 
+    local now = os.clock()
+
+    gc_pending(now)
+
     local pending =
         pending_actions[target_id]
 
@@ -124,7 +151,7 @@ function actiontracker.get_pending(target_id)
     end
 
     -- EXPIRE OLD PENDING
-    if os.clock() - pending.created_at > 10 then
+    if now - pending.created_at > PENDING_TTL then
 
         pending_actions[target_id] = nil
 

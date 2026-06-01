@@ -4,25 +4,25 @@ local prims = require('prims')
 local settings =
     require('data/settings')
 
-local scale_settings = {
-
-    settings.playerhud,
-    settings.targethud,
-    settings.tothud,
-    settings.partyhud,
-    settings.buffhud,
-    settings.debuffhud,
-    settings.castbar,
-    settings.experiencehud,
-
-    settings.pethud,
-    settings.inventoryhud,
-    settings.distancehud,
-    settings.mobinfohud,
-    settings.zonehud,
-    settings.gilhud,
-    settings.lootnotify
-
+-- Single source of truth: label / command-name / settings pair.
+-- Order here drives both the button layout and the click dispatch,
+-- so they can never drift out of sync.
+local huds = {
+    { label = 'Player HUD',     name = 'playerhud',     settings = settings.playerhud },
+    { label = 'Target HUD',     name = 'targethud',     settings = settings.targethud },
+    { label = 'ToT HUD',        name = 'tothud',        settings = settings.tothud },
+    { label = 'Party HUD',      name = 'partyhud',      settings = settings.partyhud },
+    { label = 'Buff HUD',       name = 'buffhud',       settings = settings.buffhud },
+    { label = 'Debuff HUD',     name = 'debuffhud',     settings = settings.debuffhud },
+    { label = 'Cast Bar',       name = 'castbar',       settings = settings.castbar },
+    { label = 'Experience HUD', name = 'experiencehud', settings = settings.experiencehud },
+    { label = 'Pet HUD',        name = 'pethud',        settings = settings.pethud },
+    { label = 'Inventory HUD',  name = 'inventoryhud',  settings = settings.inventoryhud },
+    { label = 'Distance HUD',   name = 'distancehud',   settings = settings.distancehud },
+    { label = 'MobInfo HUD',    name = 'mobinfohud',    settings = settings.mobinfohud },
+    { label = 'Zone HUD',       name = 'zonehud',       settings = settings.zonehud },
+    { label = 'Gil HUD',        name = 'gilhud',        settings = settings.gilhud },
+    { label = 'Loot Notify',    name = 'lootnotify',    settings = settings.lootnotify },
 }
 
 local configmenu = {}
@@ -72,68 +72,19 @@ local HOVER_TEXT = {
 -- ELEMENTS
 -- =========================================================
 
-local button_labels = {
+-- Derived views over `huds` so the layout/click code below can stay simple.
+-- (Kept as separate locals to minimize churn in the rest of the file.)
+local button_labels = {}
+local button_modules = {}
+local scale_values = {}
+local scale_settings = {}
 
-    'Player HUD',
-    'Target HUD',
-    'ToT HUD',
-    'Party HUD',
-    'Buff HUD',
-    'Debuff HUD',
-    'Cast Bar',
-    'Experience HUD',
-
-    'Pet HUD',
-    'Inventory HUD',
-    'Distance HUD',
-    'MobInfo HUD',
-    'Zone HUD',
-    'Gil HUD',
-    'Loot Notify'
-
-}
-
-local button_modules = {
-
-    'playerhud',
-    'targethud',
-    'tothud',
-    'partyhud',
-    'buffhud',
-    'debuffhud',
-    'castbar',
-    'experiencehud',
-
-    'pethud',
-    'inventoryhud',
-    'distancehud',
-    'mobinfohud',
-    'zonehud',
-    'gilhud',
-    'lootnotify'
-
-}
-
-local scale_values = {
-
-    settings.playerhud.scale,
-    settings.targethud.scale,
-    settings.tothud.scale,
-    settings.partyhud.scale,
-    settings.buffhud.scale,
-    settings.debuffhud.scale,
-    settings.castbar.scale,
-    settings.experiencehud.scale,
-
-    settings.pethud.scale,
-    settings.inventoryhud.scale,
-    settings.distancehud.scale,
-    settings.mobinfohud.scale,
-    settings.zonehud.scale,
-    settings.gilhud.scale,
-    settings.lootnotify.scale
-
-}
+for i, hud in ipairs(huds) do
+    button_labels[i] = hud.label
+    button_modules[i] = hud.name
+    scale_values[i] = hud.settings.scale
+    scale_settings[i] = hud.settings
+end
 
 local background
 local header
@@ -613,11 +564,27 @@ end
 -- CLICK
 -- =========================================================
 
+-- Helper: is the click inside the menu's bounding rectangle?
+local function in_menu_bounds(x, y)
+
+    return
+        x >= configmenu.x and
+        x <= configmenu.x + configmenu.width and
+        y >= configmenu.y and
+        y <= configmenu.y + configmenu.height
+
+end
+
 function configmenu.click(x, y)
 
     if not configmenu.visible then
         return false
     end
+
+    -- Any click within the menu's rectangle is consumed by the menu,
+    -- so clicks on the dialog background don't fall through to drag
+    -- handling or the game itself.
+    local in_bounds = in_menu_bounds(x, y)
 
     -- X
 
@@ -728,6 +695,12 @@ if configmenu.page == 1 then
 
     end
 
+    -- If we got here on page 1 and the click hit the dialog (but no
+    -- button), still consume it so the underlying game doesn't see it.
+    if in_bounds then
+        return true
+    end
+
 end
 
 if configmenu.page == 2 then
@@ -800,6 +773,11 @@ if configmenu.page == 2 then
     end
 
 end
+
+    -- Page-2 in-bounds fallthrough.
+    if in_menu_bounds(x, y) then
+        return true
+    end
 
     return false
 

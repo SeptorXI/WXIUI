@@ -47,6 +47,19 @@ local damage_timer = 0
 local heal_timer = 0
 
 local last_spawn_type = nil
+local last_target_id = nil
+local last_clock = nil
+
+local function reset_smoothing(initial_percent)
+
+    displayed_hp = initial_percent
+    delayed_hp = initial_percent
+    heal_hp = initial_percent
+    previous_hp = nil
+    damage_timer = 0
+    heal_timer = 0
+
+end
 
 -- =========================================================
 -- COLORS
@@ -357,11 +370,24 @@ function targethud.update()
         end
 
         mob = {
+            id = -1,
             name = 'Target Preview',
             hpp = 72,
             spawn_type = 16,
             claim_id = 0
         }
+
+    end
+
+    -- =====================================================
+    -- TARGET CHANGED: RESET SMOOTHING STATE
+    -- =====================================================
+
+    if mob.id ~= last_target_id then
+
+        reset_smoothing(mob.hpp / 100)
+
+        last_target_id = mob.id
 
     end
 
@@ -662,12 +688,15 @@ hp_fill:height(
     )
 )
 
+    local now = os.clock()
+    local dt = last_clock and (now - last_clock) or 0.016
+    last_clock = now
+
     if damage_timer > 0 then
 
         hp_damage_fill:visible(true)
 
-        damage_timer =
-            damage_timer - 0.016
+        damage_timer = damage_timer - dt
 
     else
 
@@ -679,8 +708,7 @@ hp_fill:height(
 
         hp_heal_fill:visible(true)
 
-        heal_timer =
-            heal_timer - 0.016
+        heal_timer = heal_timer - dt
 
     else
 

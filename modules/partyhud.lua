@@ -322,6 +322,8 @@ local function reset_member(member)
 
     member.damage_hp = 1.0
 
+    -- Reset max_mp so an ex-WHM's max doesn't leak into a new RDM
+    -- when the slot gets reused.
     member.max_mp = 1
 
 end
@@ -603,24 +605,19 @@ end
 
     -- =====================================================
     -- PARTY HASH
+    --
+    -- table.concat avoids 5 intermediate string allocations per frame
+    -- that the old `..` accumulator produced.
     -- =====================================================
 
-    local current_hash = ''
+    local hash_parts = {}
 
     for i = 1, 6 do
-
-        local p =
-            party['p' .. i]
-
-        if p and p.name then
-
-            current_hash =
-                current_hash ..
-                p.name
-
-        end
-
+        local p = party['p' .. i]
+        hash_parts[i] = (p and p.name) or ''
     end
+
+    local current_hash = table.concat(hash_parts, '\0')
 
     if current_hash ~= last_party_hash then
 

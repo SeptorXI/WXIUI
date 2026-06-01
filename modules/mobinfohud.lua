@@ -170,60 +170,38 @@ end
 -- UPDATE
 -- =========================================================
 
+-- Cache the scale we last applied so we only push :size() calls when it
+-- actually changes (every frame otherwise — needlessly).
+local last_applied_scale = nil
+
 function mobinfohud.update()
-
-    local scale = get_scale()
-
-
-state_icon:size(
-    20 * scale,
-    20 * scale
-)
-
-sight_icon:size(
-    20 * scale,
-    20 * scale
-)
-
-sound_icon:size(
-    20 * scale,
-    20 * scale
-)
-
-blood_icon:size(
-    20 * scale,
-    20 * scale
-)
-
-scent_icon:size(
-    20 * scale,
-    20 * scale
-)
-
-truesight_icon:size(
-    20 * scale,
-    20 * scale
-)
-
-truehearing_icon:size(
-    20 * scale,
-    20 * scale
-)
-
-link_icon:size(
-    20 * scale,
-    20 * scale
-)
-
-    info_text:size(
-        math.floor(10 * scale)
-    )
 
     if not mobinfohud.visible then
 
         hide()
 
         return
+
+    end
+
+    local scale = get_scale()
+
+    if scale ~= last_applied_scale then
+
+        local s = 20 * scale
+
+        state_icon:size(s, s)
+        sight_icon:size(s, s)
+        sound_icon:size(s, s)
+        blood_icon:size(s, s)
+        scent_icon:size(s, s)
+        truesight_icon:size(s, s)
+        truehearing_icon:size(s, s)
+        link_icon:size(s, s)
+
+        info_text:size(math.floor(10 * scale))
+
+        last_applied_scale = scale
 
     end
 

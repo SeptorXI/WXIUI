@@ -79,8 +79,9 @@ local function save_runtime()
             buff.duration
         ))
 
+        -- Use %q so quotes/backslashes in action names don't corrupt the file.
         file:write(string.format(
-            '        source_action = "%s",\n',
+            '        source_action = %q,\n',
             buff.source_action or ''
         ))
 
@@ -92,6 +93,20 @@ local function save_runtime()
 
     file:close()
 
+end
+
+-- Dirty flag: flush at most once per update tick, not per mutation.
+local runtime_dirty = false
+
+local function mark_dirty()
+    runtime_dirty = true
+end
+
+local function flush_runtime()
+    if runtime_dirty then
+        save_runtime()
+        runtime_dirty = false
+    end
 end
 
 -- RESTORE RUNTIME
@@ -138,7 +153,7 @@ local function track_buff(
 
     }
 
-    save_runtime()
+    mark_dirty()
 
 end
 
@@ -152,6 +167,23 @@ function bufftracker.update()
         return
     end
 
+    -- Hoist invariants out of the player.buffs loop.
+    local pending =
+        actiontracker.get_pending(player.id)
+
+    local parsed_buffs = nil
+
+    if pending and pending.action_info then
+
+        local parsed =
+            spellparser.parse(pending.action_info)
+
+        if parsed and parsed.buffs then
+            parsed_buffs = parsed.buffs
+        end
+
+    end
+
     local current_buffs = {}
 
     for _, buff_id in pairs(player.buffs) do
@@ -160,36 +192,24 @@ function bufftracker.update()
 
             current_buffs[buff_id] = true
 
-            local pending =
-                actiontracker.get_pending(
-                    player.id
-                )
+            if parsed_buffs then
 
-            if pending and
-               pending.action_info then
+                for _, buff in pairs(parsed_buffs) do
 
-                local parsed =
-                    spellparser.parse(
-                        pending.action_info
-                    )
+                    if buff.id == buff_id then
 
-                if parsed and parsed.buffs then
+                        track_buff(
+                            buff_id,
+                            buff.duration,
+                            pending.action_name
+                        )
 
-                    for _, buff in pairs(parsed.buffs) do
+                        actiontracker.clear_pending(player.id)
 
-                        if buff.id == buff_id then
+                        -- The pending action was consumed; stop matching.
+                        parsed_buffs = nil
 
-                            track_buff(
-                                buff_id,
-                                buff.duration,
-                                pending.action_name
-                            )
-
-                            actiontracker.clear_pending(
-                                player.id
-                            )
-
-                        end
+                        break
 
                     end
 
@@ -208,13 +228,16 @@ function bufftracker.update()
 
             active_buffs[buff_id] = nil
 
-            save_runtime()
+            mark_dirty()
 
         end
 
     end
 
     previous_buffs = current_buffs
+
+    -- One disk write per tick at most.
+    flush_runtime()
 
 end
 

@@ -48,6 +48,9 @@ local previous_hp = nil
 local damage_timer = 0
 local heal_timer = 0
 
+local last_clock = nil
+local last_tp_texture = nil
+
 -- =========================================================
 -- COLORS
 -- =========================================================
@@ -461,12 +464,15 @@ hp_fill:height(
     bar_height
 )
 
+    local now = os.clock()
+    local dt = last_clock and (now - last_clock) or 0.016
+    last_clock = now
+
     if damage_timer > 0 then
 
         hp_damage_fill:visible(true)
 
-        damage_timer =
-            damage_timer - 0.016
+        damage_timer = damage_timer - dt
 
     else
 
@@ -478,8 +484,7 @@ hp_fill:height(
 
         hp_heal_fill:visible(true)
 
-        heal_timer =
-            heal_timer - 0.016
+        heal_timer = heal_timer - dt
 
     else
 
@@ -577,11 +582,17 @@ tp_circle:size(
     64 * scale
 )
 
-    tp_circle:path(
-        windower.addon_path ..
-        'assets/textures/' ..
-        tp_texture
-    )
+    if tp_texture ~= last_tp_texture then
+
+        tp_circle:path(
+            windower.addon_path ..
+            'assets/textures/' ..
+            tp_texture
+        )
+
+        last_tp_texture = tp_texture
+
+    end
 
     tp_circle:pos(
         tp_x,
